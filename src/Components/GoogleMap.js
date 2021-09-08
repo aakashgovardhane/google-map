@@ -1,10 +1,36 @@
 import React from 'react';
 import { Map, GoogleApiWrapper } from 'google-maps-react';
 
-let drawPoly = "";
-let markers = [];
-let polygonPoints = [];
-let labelIndex = 0
+
+let polygonsArray = [{
+    drawPoly: "",
+    markers: [],
+    polygonPoints: [],
+    labelIndex: 0
+}];
+
+let polygonColors = [
+    {
+        strokeColor: "#FF0000",
+        fillColor: "#FF0000",
+    },
+    {
+        strokeColor: "#2AFF00",
+        fillColor: "#2AFF00",
+    },
+    {
+        strokeColor: "#00FFF0",
+        fillColor: "#00FFF0",
+    },
+    {
+        strokeColor: "#003AFF",
+        fillColor: "#003AFF",
+    },
+    {
+        strokeColor: "#F300FF",
+        fillColor: "#F300FF",
+    }
+]
 
 class GoogleMaps extends React.Component {
     constructor() {
@@ -13,72 +39,91 @@ class GoogleMaps extends React.Component {
             center: { lat: 19.993982, lng: 73.790416 },
             google: null,
             map: null,
+            activePolygon: 0,
+            activeColor: 0
         }
     }
 
+    addNewPolygon = () => {
+        polygonsArray.push({
+            drawPoly: "",
+            markers: [],
+            polygonPoints: [],
+            labelIndex: 0
+        })
+        this.setState((state) => ({
+            ...state,
+            activePolygon: ++state.activePolygon,
+            activeColor: ++state.activeColor
+        }));
+        window.alert("you can draw new polygon now")
+    }
+
     hideMarkers = () => {
-        for (let i = 0; i < markers.length; i++) {
-            markers[i].setMap(null);
+        const { activePolygon } = this.state
+        for (let i = 0; i < polygonsArray[activePolygon].markers.length; i++) {
+            polygonsArray[activePolygon].markers[i].setMap(null);
         }
     }
 
     showMarkers = () => {
-        let { map } = this.state;
-        for (let i = 0; i < markers.length; i++) {
-            markers[i].setMap(map);
+        let { map, activePolygon } = this.state;
+        for (let i = 0; i < polygonsArray[activePolygon].markers.length; i++) {
+            polygonsArray[activePolygon].markers[i].setMap(map);
         }
     }
 
     addMarker = (markerData) => {
-        let { google, map } = this.state;
+        let { google, map, activePolygon } = this.state;
         const marker = new google.maps.Marker({
             position: markerData.coords,
-            label: (++labelIndex).toString(),
+            label: (++polygonsArray[activePolygon].labelIndex).toString(),
             map: map
         })
-        markers.push(marker);
+        polygonsArray[activePolygon].markers.push(marker);
         let lat = markerData.coords.lat();
         let lng = markerData.coords.lng();
-        polygonPoints.push({ lat, lng });
-        console.log("polyponis", polygonPoints);
+        polygonsArray[activePolygon].polygonPoints.push({ lat, lng });
         this.hidePolygon().then((result) => {
             this.drawPolygon()
         })
     }
     drawPolygon = () => {
-        let { google, map } = this.state;
-        drawPoly = new google.maps.Polygon({
-            paths: polygonPoints,
-            strokeColor: "#FF0000",
+        let { google, map, activePolygon, activeColor } = this.state;
+        polygonsArray[activePolygon].drawPoly = new google.maps.Polygon({
+            paths: polygonsArray[activePolygon].polygonPoints,
+            strokeColor: polygonColors[activeColor].strokeColor,
             strokeOpacity: 0.8,
             strokeWeight: 2,
-            fillColor: "#FF0000",
+            fillColor: polygonColors[activeColor].fillColor,
             fillOpacity: 0.35,
         });
-        drawPoly.setMap(map);
+        polygonsArray[activePolygon].drawPoly.setMap(map);
     }
 
     showPolygon = () => {
-        let { map } = this.state;
-        if (polygonPoints.length > 0) {
-            drawPoly.setMap(map);
+        let { map, activePolygon } = this.state;
+        if (polygonsArray[activePolygon].polygonPoints.length > 0) {
+            polygonsArray[activePolygon].drawPoly.setMap(map);
         }
     }
 
     removeEverything = () => {
-        if (polygonPoints.length > 0) {
+        let { activePolygon } = this.state;
+        if (polygonsArray[activePolygon].polygonPoints.length > 0) {
             this.hidePolygon()
             this.hideMarkers();
-            polygonPoints = [];
-            markers = [];
-            labelIndex = 0;
+            polygonsArray[activePolygon].polygonPoints = [];
+            polygonsArray[activePolygon].markers = [];
+            polygonsArray[activePolygon].labelIndex = 0;
         }
     }
 
     hidePolygon = () => {
+        let { activePolygon } = this.state;
         return new Promise((resolve, reject) => {
-            if (polygonPoints.length > 1) {
-                drawPoly.setMap(null);
+            if (polygonsArray[activePolygon].polygonPoints.length > 1) {
+                polygonsArray[activePolygon].drawPoly.setMap(null);
             }
             resolve({ result: "done" })
         })
@@ -86,18 +131,6 @@ class GoogleMaps extends React.Component {
     initMap = async (mapProps, map) => {
         const { google } = mapProps;
         this.setState({ google: mapProps.google, map: map })
-
-        // const marker = new google.maps.Marker({
-        //     position: { lat: 19.997454, lng: 73.789803 },
-        //     map: map
-        // })
-
-        // const infoWindow = new google.maps.InfoWindow({
-        //     content: "<h1>Aakash</h1>"
-        // })
-        // marker.addListener("click", () => {
-        //     infoWindow.open(map, marker);
-        // })
 
         google.maps.event.addListener(map, "click", (event) => {
             this.addMarker({ coords: event.latLng })
@@ -125,6 +158,7 @@ class GoogleMaps extends React.Component {
                     <button className="btn btn-primary" onClick={this.hidePolygon} style={{ position: "absolute", top: 100, right: 15 }}>Hide Polygon</button>
                     <button className="btn btn-primary" onClick={this.hideMarkers} style={{ position: "absolute", top: 60, right: 15 }}>Hide Markers</button>
                     <button className="btn btn-primary" onClick={this.showMarkers} style={{ position: "absolute", top: 20, right: 15 }}>Show Markers</button>
+                    <button className="btn btn-primary" onClick={this.addNewPolygon} style={{ position: "absolute", bottom: 100, right: 15 }}>Create New Polygon</button>
                 </Map>
             </>
         );
