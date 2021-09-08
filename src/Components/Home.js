@@ -1,5 +1,4 @@
 import React from 'react';
-import { Map, InfoWindow, Marker, GoogleApiWrapper } from 'google-maps-react';
 import GoogleMap from './GoogleMap';
 
 class Home extends React.Component {
