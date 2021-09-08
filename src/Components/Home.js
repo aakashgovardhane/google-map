@@ -17,7 +17,7 @@ class Home extends React.Component {
     render() {
         return (
             <div>
-            <div style={{textAlign: 'center'}}><h1>Google map integration</h1></div>
+                <div style={{ textAlign: 'center' }}><h1>Google map integration</h1></div>
                 <GoogleMap />
             </div>
         );
